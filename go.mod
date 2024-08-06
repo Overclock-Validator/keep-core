@@ -1,6 +1,7 @@
-module github.com/keep-network/keep-core
+module github.com/Overclock-Validator/keep-core
 
 go 1.20
+
 
 replace (
 	github.com/bnb-chain/tss-lib => github.com/threshold-network/tss-lib v0.0.0-20230901144531-2e712689cfbe
