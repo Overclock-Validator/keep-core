@@ -20,18 +20,18 @@ type G2Point struct {
 }
 
 // Quadratic extension field element as seen in bn256/gfp2.go.
-type gfP2 struct {
+type GfP2 struct {
 	x, y *big.Int
 }
 
 // Twist curve B constant from bn256/twist.go. This is used to calculate y using y² = x³ + twistB.
-var twistB = &gfP2{
+var twistB = &GfP2{
 	bigFromBase10("19485874751759354771024239261021720505790618469301721065564631296452457478373"),
 	bigFromBase10("266929791119991161246907387137283842545076965332900288569378510910307636690"),
 }
 
 // Root of the point where x and y are equal. This is used to calculate square root of y in gfP2.
-var hexRoot = &gfP2{
+var hexRoot = &GfP2{
 	bigFromBase10("21573744529824266246521972077326577680729363968861965890554801909984373949499"),
 	bigFromBase10("16854739155576650954933913186877292401521110422362946064090026408937773542853"),
 }
@@ -94,7 +94,7 @@ func G1FromInts(x *big.Int, y *big.Int) (*bn256.G1, error) {
 }
 
 // G2FromInts returns G2 point based on the provided x and y in Fp^2.
-func G2FromInts(x *gfP2, y *gfP2) (*bn256.G2, error) {
+func G2FromInts(x *GfP2, y *GfP2) (*bn256.G2, error) {
 
 	if len(x.x.Bytes()) > 32 || len(x.y.Bytes()) > 32 || len(y.x.Bytes()) > 32 || len(y.y.Bytes()) > 32 {
 		return nil, errors.New("points on G2 are limited to two 256-bit coordinates")
@@ -223,13 +223,13 @@ func DecompressToG1(m []byte) (*bn256.G1, error) {
 func DecompressToG2(m []byte) (*bn256.G2, error) {
 
 	// Get the X.
-	x := new(gfP2)
+	x := new(GfP2)
 	x.x = new(big.Int).SetBytes(m[32:64])
 	// Strip Y parity bit when recovering the upper bytes.
 	x.y = new(big.Int).SetBytes(append([]byte{m[0] & 0x7F}, m[1:32]...))
 
 	// Get one of the two possible Y on curve y² = x³ + twistB.
-	y2 := new(gfP2).pow(x, big.NewInt(3))
+	y2 := new(GfP2).pow(x, big.NewInt(3))
 	y2.add(y2, twistB)
 	y := sqrtGfP2(y2)
 
@@ -245,7 +245,7 @@ func DecompressToG2(m []byte) (*bn256.G2, error) {
 }
 
 // multiply returns multiplication of two gfP2 elements.
-func (e *gfP2) multiply(a, b *gfP2) *gfP2 {
+func (e *GfP2) multiply(a, b *GfP2) *GfP2 {
 	xx := mod(new(big.Int).Mul(a.x, b.x), bn256.P)
 	xy := mod(new(big.Int).Mul(a.x, b.y), bn256.P)
 	yx := mod(new(big.Int).Mul(a.y, b.x), bn256.P)
@@ -256,25 +256,25 @@ func (e *gfP2) multiply(a, b *gfP2) *gfP2 {
 }
 
 // add returns addition of two gfP2 elements.
-func (e *gfP2) add(a, b *gfP2) *gfP2 {
+func (e *GfP2) add(a, b *GfP2) *GfP2 {
 	e.x = mod(new(big.Int).Add(a.x, b.x), bn256.P)
 	e.y = mod(new(big.Int).Add(a.y, b.y), bn256.P)
 	return e
 }
 
 // x2y compares if y^2 equals x.
-func x2y(x, y *gfP2) bool {
-	y = new(gfP2).pow(y, big.NewInt(2))
+func x2y(x, y *GfP2) bool {
+	y = new(GfP2).pow(y, big.NewInt(2))
 	return y.x.Cmp(x.x) == 0 && y.y.Cmp(x.y) == 0
 }
 
 // sqrtGfP2 returns square root of a gfP2 element.
-func sqrtGfP2(x *gfP2) *gfP2 {
+func sqrtGfP2(x *GfP2) *GfP2 {
 
 	// (bn256.p^2 + 15) // 32)
 	var exp = bigFromBase10("14971724250519463826312126413021210649976634891596900701138993820439690427699319920245032869357433499099632259837909383182382988566862092145199781964622")
 
-	y := new(gfP2).pow(x, exp)
+	y := new(GfP2).pow(x, exp)
 
 	// Multiply y by hexRoot constant to find correct y.
 	for !x2y(x, y) {
@@ -284,7 +284,7 @@ func sqrtGfP2(x *gfP2) *gfP2 {
 }
 
 // pow returns gfP2 element to the power of the provided exponent.
-func (e *gfP2) pow(base *gfP2, exp *big.Int) *gfP2 {
+func (e *GfP2) pow(base *GfP2, exp *big.Int) *GfP2 {
 
 	e.x = big.NewInt(1)
 	e.y = big.NewInt(0)
@@ -298,7 +298,7 @@ func (e *gfP2) pow(base *gfP2, exp *big.Int) *gfP2 {
 		}
 
 		exp = new(big.Int).Rsh(exp, 1)
-		base = new(gfP2).multiply(base, base)
+		base = new(GfP2).multiply(base, base)
 	}
 	return e
 }
